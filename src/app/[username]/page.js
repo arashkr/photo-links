@@ -73,12 +73,24 @@ export default function PublicProfile({ params }) {
 
   return (
     <div className="min-h-screen p-8">
+      <header>
+      <a href="/">
+            
+            <h1 className="text-3xl font-bold hover:text-gray-700 transition-colors">
+              Yes, Bueno
+            </h1>
+            <h1 className="text-1xl font-regular hover:text-gray-700 transition-colors">
+              Wanna see what I'm reading?
+            </h1>
+          </a>
+      </header>
+        
       <div className="max-w-2xl mx-auto">
         <header className="text-center mb-12">
           <h1 className="text-3xl font-bold text-gray-900">
-            @{profile.username}
+            @{profile.username}'s Links
           </h1>
-          <p className="text-gray-500 mt-2">Links</p>
+          
         </header>
 
         <div className="space-y-4">

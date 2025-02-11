@@ -110,7 +110,15 @@ export default function Home() {
     <div className="min-h-screen p-8">
       <header className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Portfolio Links</h1>
+          <a href="/">
+            
+            <h1 className="text-3xl font-bold hover:text-gray-700 transition-colors">
+              Yes, Bueno
+            </h1>
+            <h1 className="text-1xl font-regular hover:text-gray-700 transition-colors">
+              Wanna see what I'm reading?
+            </h1>
+          </a>
           {user && (
             <p className="text-gray-600 mt-2">
               Welcome, {profile?.username || user.email}
@@ -122,8 +130,8 @@ export default function Home() {
             </p>
           )}
           {profile?.username && (
-            <p className="text-sm text-gray-500 mt-1">
-              Your public page: {' '}
+            <p className="text-sm text-gray-600 mt-1">
+              Here is your profile link: {' '}
               <a 
                 href={`/${profile.username}`}
                 className="text-blue-500 hover:text-blue-700 hover:underline"
@@ -215,6 +223,12 @@ export default function Home() {
             )}
           </div>
         ))}
+      </div>
+      <div>
+
+     
+      
+  
       </div>
     </div>
   );
