@@ -10,6 +10,14 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  useEffect(() => {
+    // Check if Supabase is properly configured
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      setError('Supabase configuration is missing');
+      return;
+    }
+  }, []);
+
   // Check if user is already logged in
   useEffect(() => {
     const checkSession = async () => {
