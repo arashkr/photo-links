@@ -1,101 +1,221 @@
-import Image from "next/image";
+'use client';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [links, setLinks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [newTitle, setNewTitle] = useState('');
+  const [newUrl, setNewUrl] = useState('');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    checkUser();
+  }, []);
+
+  async function checkUser() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      
+      if (user) {
+        // Fetch user's profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        setProfile(profile);
+        fetchUserLinks(user.id);
+      }
+    } catch (error) {
+      console.error('Error checking user:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchUserLinks(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('links')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setLinks(data || []);
+    } catch (error) {
+      console.error('Error fetching links:', error);
+    }
+  }
+
+  async function handleSignOut() {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setLinks([]);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  }
+
+  async function addLink(e) {
+    e.preventDefault();
+    if (!newTitle || !newUrl || !user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('links')
+        .insert([
+          {
+            title: newTitle,
+            url: newUrl,
+            user_id: user.id
+          },
+        ])
+        .select();
+
+      if (error) throw error;
+      setLinks([...links, ...data]);
+      setNewTitle('');
+      setNewUrl('');
+    } catch (error) {
+      console.error('Error adding link:', error);
+    }
+  }
+
+  async function removeLink(id) {
+    try {
+      const { error } = await supabase
+        .from('links')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      setLinks(links.filter(link => link.id !== id));
+    } catch (error) {
+      console.error('Error removing link:', error);
+    }
+  }
+
+  if (loading) {
+    return <div className="min-h-screen p-8">Loading...</div>;
+  }
+
+  return (
+    <div className="min-h-screen p-8">
+      <header className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Portfolio Links</h1>
+          {user && (
+            <p className="text-gray-600 mt-2">
+              Welcome, {profile?.username || user.email}
+              {!profile?.username && (
+                <span className="text-sm text-orange-500 ml-2">
+                  (No username set)
+                </span>
+              )}
+            </p>
+          )}
+          {profile?.username && (
+            <p className="text-sm text-gray-500 mt-1">
+              Your public page: {' '}
+              <a 
+                href={`/${profile.username}`}
+                className="text-blue-500 hover:text-blue-700 hover:underline"
+              >
+                {window.location.origin}/{profile.username}
+              </a>
+            </p>
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <div className="space-x-4">
+          {user ? (
+            <>
+              <a 
+                href="/settings" 
+                className="text-gray-600 hover:text-gray-900"
+              >
+                Settings
+              </a>
+              <button
+                onClick={handleSignOut}
+                className="text-red-600 hover:text-red-800"
+              >
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <>
+              <a href="/login" className="text-gray-600 hover:text-gray-900">Login</a>
+              <a href="/signup" className="text-gray-600 hover:text-gray-900">Signup</a>
+            </>
+          )}
+        </div>
+      </header>
+
+      {user && (
+        <div className="max-w-2xl mx-auto mb-8">
+          <form onSubmit={addLink} className="space-y-4 bg-white p-6 rounded-lg shadow">
+            <div>
+              <input
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="Link Title"
+                className="w-full p-2 border rounded"
+                required
+              />
+            </div>
+            <div>
+              <input
+                type="url"
+                value={newUrl}
+                onChange={(e) => setNewUrl(e.target.value)}
+                placeholder="URL"
+                className="w-full p-2 border rounded"
+                required
+              />
+            </div>
+            <button 
+              type="submit"
+              className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              Add Link
+            </button>
+          </form>
+        </div>
+      )}
+
+      <div className="max-w-2xl mx-auto space-y-4">
+        {links.map(link => (
+          <div key={link.id} className="flex items-center justify-between p-4 bg-white rounded-lg shadow">
+            <div>
+              <h2 className="text-xl font-medium">{link.title}</h2>
+              <a 
+                href={link.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:text-blue-700"
+              >
+                {link.url}
+              </a>
+            </div>
+            {user && (
+              <button
+                onClick={() => removeLink(link.id)}
+                className="text-red-500 hover:text-red-700 px-3 py-1 rounded"
+              >
+                Remove
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
